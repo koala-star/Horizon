@@ -33,3 +33,9 @@ class PronoteConnector:
     def upcoming_lessons(self):
         client = self.ensure_connected()
         return client.lessons(date.today(), date.today() + timedelta(days=7))
+
+    def current_grades(self):
+        return list(getattr(self.ensure_connected().current_period, "grades", []) or [])
+
+    def current_absences(self):
+        return list(getattr(self.ensure_connected().current_period, "absences", []) or [])

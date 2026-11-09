@@ -48,6 +48,33 @@ def homework():
     except Exception:
         raise HTTPException(status_code=502, detail="Les devoirs Pronote sont temporairement indisponibles.")
 
+@app.get("/api/timetable")
+def timetable():
+    try:
+        return [{"id": str(item.id), "subject": getattr(getattr(item, "subject", None), "name", None), "teacher": getattr(item, "teacher_name", None), "room": getattr(item, "classroom", None), "start": item.start.isoformat(), "end": item.end.isoformat(), "cancelled": bool(getattr(item, "canceled", False))} for item in connector.upcoming_lessons()]
+    except ConnectorUnavailable as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=502, detail="L’emploi du temps Pronote est temporairement indisponible.")
+
+@app.get("/api/grades")
+def grades():
+    try:
+        return [{"id": str(getattr(item, "id", index)), "subject": getattr(getattr(item, "subject", None), "name", None), "value": getattr(item, "grade", None), "out_of": getattr(item, "out_of", None), "date": getattr(item, "date", None)} for index, item in enumerate(connector.current_grades())]
+    except ConnectorUnavailable as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Les notes Pronote sont temporairement indisponibles.")
+
+@app.get("/api/absences")
+def absences():
+    try:
+        return [{"id": str(getattr(item, "id", index)), "date": getattr(item, "date", None), "justified": bool(getattr(item, "justified", False)), "reason": getattr(item, "reason", None)} for index, item in enumerate(connector.current_absences())]
+    except ConnectorUnavailable as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Les absences Pronote sont temporairement indisponibles.")
+
 @app.patch("/api/homework/{homework_id}", response_model=Homework)
 def set_homework_status(homework_id: str, payload: HomeworkStatusUpdate):
     update_homework_status(homework_id, payload.status)
