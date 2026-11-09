@@ -13,14 +13,18 @@ async def lifespan(_: FastAPI):
     yield
 
 app = FastAPI(title="Horizon API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "https://koala-star.github.io"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 def unavailable() -> Availability:
     return Availability(available=False, reason="Connectez votre compte Pronote pour afficher cette information.")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "pronote_connected": connector.client is not None}
+
+@app.get("/api/connection/status")
+def connection_status():
+    return {"connected": connector.client is not None, "provider": "pronote"}
 
 @app.get("/api/dashboard", response_model=Dashboard)
 def dashboard():
