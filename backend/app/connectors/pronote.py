@@ -11,7 +11,8 @@ class PronoteConnector:
     def connect(self, url: str, username: str, password: str) -> None:
         try:
             import pronotepy
-            client = pronotepy.Client(url, username=username, password=password)
+            from pronote_mcp.ent import monlycee_ent
+            client = pronotepy.Client(url, username=username, password=password, ent=monlycee_ent)
         except Exception as exc:
             # Do not expose provider internals or credentials to the frontend.
             raise ConnectorUnavailable("Connexion Pronote impossible. Vérifiez l’URL directe de l’espace élève et vos identifiants.") from exc
