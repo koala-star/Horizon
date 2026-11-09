@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .database import initialise, homework_status, update_homework_status
-from .models import Availability, ConnectionRequest, Dashboard, Homework, HomeworkStatusUpdate
+from .models import Availability, ConnectionRequest, Dashboard, Homework, HomeworkStatus, HomeworkStatusUpdate
 from .connectors.pronote import PronoteConnector, ConnectorUnavailable
 
 connector = PronoteConnector()
@@ -28,13 +28,25 @@ def connection_status():
 
 @app.get("/api/dashboard", response_model=Dashboard)
 def dashboard():
-    state = unavailable()
-    return Dashboard(connection=Availability(available=connector.client is not None, reason=None if connector.client else state.reason), next_class=state, timetable=state, grades=state, homework=state, absences=state, news=state)
+    if connector.client is None:
+        state = unavailable()
+        return Dashboard(connection=state, next_class=state, timetable=state, grades=state, homework=state, absences=state, news=state)
+    try:
+        lessons = connector.upcoming_lessons()
+        homework_items = connector.upcoming_homework()
+        connected = Availability(available=True)
+        return Dashboard(connection=connected, next_class=Availability(available=bool(lessons), count=len(lessons)), timetable=Availability(available=True, count=len(lessons)), grades=Availability(available=True), homework=Availability(available=True, count=len(homework_items)), absences=Availability(available=True), news=Availability(available=True))
+    except Exception:
+        return Dashboard(connection=Availability(available=True), next_class=Availability(available=False, reason="Données Pronote temporairement indisponibles."), timetable=Availability(available=False, reason="Données Pronote temporairement indisponibles."), grades=Availability(available=False, reason="Données Pronote temporairement indisponibles."), homework=Availability(available=False, reason="Données Pronote temporairement indisponibles."), absences=Availability(available=False, reason="Données Pronote temporairement indisponibles."), news=Availability(available=False, reason="Données Pronote temporairement indisponibles."))
 
 @app.get("/api/homework", response_model=list[Homework])
 def homework():
-    # No items are fabricated when the provider is not connected.
-    return []
+    try:
+        return [Homework(id=str(item.id), subject=getattr(getattr(item, "subject", None), "name", None), description=item.description, due_date=item.date, status=HomeworkStatus.DONE if item.done else HomeworkStatus.TODO, source_available=True) for item in connector.upcoming_homework()]
+    except ConnectorUnavailable as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Les devoirs Pronote sont temporairement indisponibles.")
 
 @app.patch("/api/homework/{homework_id}", response_model=Homework)
 def set_homework_status(homework_id: str, payload: HomeworkStatusUpdate):

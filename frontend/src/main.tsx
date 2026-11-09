@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Bell, BookOpen, CalendarDays, CheckSquare, ChevronRight, Clock3, GraduationCap, Inbox, LayoutDashboard, LogOut, Menu, Moon, RefreshCw, Settings, ShieldCheck, Sun, UserRound, X } from 'lucide-react'
 import './styles.css'
 
-type Availability = { available: boolean; reason?: string }
+type Availability = { available: boolean; reason?: string; count?: number }
 type Dashboard = Record<string, Availability>
 type PageName = 'Accueil' | 'Emploi du temps' | 'Notes' | 'Devoirs' | 'Cahier de textes' | 'Absences' | 'Messagerie' | 'Paramètres'
 const api = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost'
@@ -11,7 +11,7 @@ const api = import.meta.env.VITE_API_URL || (window.location.hostname === 'local
   : 'https://horizon-p6l9.onrender.com/api')
 const navigation: [PageName, typeof LayoutDashboard][] = [['Accueil', LayoutDashboard], ['Emploi du temps', CalendarDays], ['Notes', GraduationCap], ['Devoirs', CheckSquare], ['Cahier de textes', BookOpen], ['Absences', Clock3], ['Messagerie', Inbox], ['Paramètres', Settings]]
 
-function Unavailable({ item, fallback = 'Donnée indisponible sans connexion Pronote.' }: { item?: Availability; fallback?: string }) { return <div className="unavailable"><span className="quiet-dot"/>{item?.reason ?? fallback}</div> }
+function Unavailable({ item, fallback = 'Donnée indisponible sans connexion Pronote.' }: { item?: Availability; fallback?: string }) { const label = item?.available ? (item.count === undefined ? 'Données disponibles' : `${item.count} élément${item.count > 1 ? 's' : ''} disponible${item.count > 1 ? 's' : ''}`) : item?.reason ?? fallback; return <div className="unavailable"><span className="quiet-dot"/>{label}</div> }
 
 function App() {
   const [active, setActive] = useState<PageName>('Accueil'); const [dark, setDark] = useState(localStorage.getItem('horizon-theme') === 'dark'); const [open, setOpen] = useState(false); const [data, setData] = useState<Dashboard | null>(null); const [loading, setLoading] = useState(true); const [apiOnline, setApiOnline] = useState(false); const [refreshing, setRefreshing] = useState(false); const [displayName, setDisplayName] = useState(localStorage.getItem('horizon-name') || '');

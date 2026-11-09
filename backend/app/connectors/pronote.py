@@ -1,5 +1,6 @@
 """Provider boundary: map only verified pronotepy capabilities here."""
 from dataclasses import dataclass
+from datetime import date, timedelta
 
 class ConnectorUnavailable(Exception):
     pass
@@ -24,3 +25,11 @@ class PronoteConnector:
         if self.client is None:
             raise ConnectorUnavailable("Connectez un compte Pronote pour consulter ces données.")
         return self.client
+
+    def upcoming_homework(self):
+        client = self.ensure_connected()
+        return client.homework(date.today(), date.today() + timedelta(days=30))
+
+    def upcoming_lessons(self):
+        client = self.ensure_connected()
+        return client.lessons(date.today(), date.today() + timedelta(days=7))

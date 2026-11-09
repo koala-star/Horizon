@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 class Availability(BaseModel):
     available: bool
     reason: str | None = None
+    count: int | None = None
 
 class HomeworkStatus(str, Enum):
     TODO = "todo"
